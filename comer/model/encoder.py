@@ -10,7 +10,7 @@ from torch import FloatTensor, LongTensor
 
 from .pos_enc import ImgPosEnc
 
-class ChannelAttention(pl.LightningModule):
+class ChannelAttention(nn.Module):
     def __init__(self, channels, reduction_rate=16):
         super(ChannelAttention, self).__init__()
         self.squeeze = nn.ModuleList([
@@ -39,7 +39,7 @@ class ChannelAttention(pl.LightningModule):
         attention = self.sigmoid(avg_out + max_out)
         return attention * x
 
-class SpatialAttention(pl.LightningModule):
+class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super(SpatialAttention, self).__init__()
         self.conv = nn.Conv2d(
@@ -52,17 +52,16 @@ class SpatialAttention(pl.LightningModule):
 
     def forward(self, x):
 
-        # mean on spatial dim
         avg_feat    = torch.mean(x, dim=1, keepdim=True)
-        # max on spatial dim
         max_feat, _ = torch.max(x, dim=1, keepdim=True)
+
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
         attention = self.sigmoid(feat)
 
         return attention * x
 
-class CBAM(pl.LightningModule):
+class CBAM(nn.Module):
     def __init__(self, channels, reduction_rate=16, kernel_size=7):
         super(CBAM, self).__init__()
         self.channel_attention = ChannelAttention(channels,
