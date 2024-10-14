@@ -52,9 +52,8 @@ class SpatialAttention(nn.Module):
             out_channels=1,
             kernel_size=kernel_size,
             padding=kernel_size // 2,
-            bias=False
+            bias=True
         )
-        self.bn = nn.BatchNorm2d(1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -64,7 +63,6 @@ class SpatialAttention(nn.Module):
 
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
-        feat = self.bn(feat)
         attention = self.sigmoid(feat)
         return attention + x
 
@@ -289,7 +287,7 @@ if __name__ == "__main__":
     #     layer.register_backward_hook(print_grad)
 
     # print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
-    print(encoder)
+    # print(encoder)
 
-    # print(encoder(img, img_mask)[0].shape)
-    # print(encoder(img, img_mask)[1].shape)
+    print(encoder(img, img_mask)[0].shape)
+    print(encoder(img, img_mask)[1].shape)
