@@ -109,7 +109,6 @@ class _Bottleneck(nn.Module):
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
 
-
         return out
 
 
