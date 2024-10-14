@@ -41,7 +41,7 @@ class ChannelAttention(nn.Module):
         max_out = self.excitation(max_feat)
         # attention
         attention = self.sigmoid(avg_out + max_out)
-        return attention + x
+        return x + (attention * x)
 
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
@@ -64,7 +64,7 @@ class SpatialAttention(nn.Module):
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
         attention = self.sigmoid(feat)
-        return attention + x
+        return x + (attention * x)
 
 class CBAM(nn.Module):
     def __init__(self, channels, reduction_rate=16, kernel_size=7):
@@ -289,5 +289,5 @@ if __name__ == "__main__":
     # print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
     # print(encoder)
 
-    print(encoder(img, img_mask)[0].shape)
+    print(encoder(img, img_mask)[0])
     print(encoder(img, img_mask)[1].shape)
