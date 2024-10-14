@@ -41,7 +41,7 @@ class ChannelAttention(nn.Module):
         max_out = self.excitation(max_feat)
         # attention
         attention = self.sigmoid(avg_out + max_out)
-        return x + (attention * x)
+        return x + attention * x
 
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
@@ -66,7 +66,7 @@ class SpatialAttention(nn.Module):
         feat = self.conv(feat)
         feat = self.bn(feat)
         attention = self.sigmoid(feat)
-        return x + (attention * x)
+        return x + attention * x
 
 class CBAM(nn.Module):
     def __init__(self, channels, reduction_rate=16, kernel_size=7):
@@ -144,7 +144,8 @@ class _Transition(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        out = self.bn1(self.conv1(x))
+        out = F.relu(out, inplace=True)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
@@ -170,7 +171,7 @@ class DenseNet(nn.Module):
         )
         self.norm1 = nn.BatchNorm2d(n_channels)
 
-        self.cbam = CBAM(n_channels, reduction_rate=16, kernel_size=7)
+        # self.cbam = CBAM(n_channels, reduction_rate=16, kernel_size=7)
 
 
 
@@ -216,7 +217,7 @@ class DenseNet(nn.Module):
         out = F.max_pool2d(out, 2, ceil_mode=True)
         out_mask = out_mask[:, 0::2, 0::2]
 
-        out = self.cbam(out)
+        # out = self.cbam(out)
 
         out = self.dense1(out)
         out = self.trans1(out)
