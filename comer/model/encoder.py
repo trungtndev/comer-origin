@@ -70,10 +70,8 @@ class CBAM(pl.LightningModule):
         self.spatial_attention = SpatialAttention(kernel_size)
 
     def forward(self, x):
-        out1 = self.channel_attention(x)
-        out2 = self.spatial_attention(out1)
-
-        return out2
+        out = self.channel_attention(x)
+        return self.spatial_attention(out)
 
 # DenseNet-B
 class _Bottleneck(nn.Module):
