@@ -10,7 +10,7 @@ from torch import FloatTensor, LongTensor
 
 from .pos_enc import ImgPosEnc
 
-class ChannelAttention(nn.Module):
+class ChannelAttention(pl.LightningModule):
     def __init__(self, channels, reduction_rate=16):
         super(ChannelAttention, self).__init__()
         self.squeeze = nn.ModuleList([
@@ -39,7 +39,7 @@ class ChannelAttention(nn.Module):
         attention = self.sigmoid(avg_out + max_out)
         return attention * x
 
-class SpatialAttention(nn.Module):
+class SpatialAttention(pl.LightningModule):
     def __init__(self, kernel_size=7):
         super(SpatialAttention, self).__init__()
         self.conv = nn.Conv2d(
@@ -51,13 +51,15 @@ class SpatialAttention(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
+
         # mean on spatial dim
         avg_feat    = torch.mean(x, dim=1, keepdim=True)
         # max on spatial dim
         max_feat, _ = torch.max(x, dim=1, keepdim=True)
         feat = torch.cat([avg_feat, max_feat], dim=1)
-        out_feat = self.conv(feat)
-        attention = self.sigmoid(out_feat)
+        feat = self.conv(feat)
+        attention = self.sigmoid(feat)
+
         return attention * x
 
 class CBAM(pl.LightningModule):
@@ -68,10 +70,10 @@ class CBAM(pl.LightningModule):
         self.spatial_attention = SpatialAttention(kernel_size)
 
     def forward(self, x):
-        out = self.channel_attention(x)
-        out = self.spatial_attention(out)
+        out1 = self.channel_attention(x)
+        out2 = self.spatial_attention(out1)
 
-        return out
+        return out2
 
 # DenseNet-B
 class _Bottleneck(nn.Module):
@@ -84,6 +86,7 @@ class _Bottleneck(nn.Module):
         self.conv2 = nn.Conv2d(
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
+        self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
@@ -92,6 +95,7 @@ class _Bottleneck(nn.Module):
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
+        out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
@@ -129,7 +133,7 @@ class _Transition(nn.Module):
         self.bn1 = nn.BatchNorm2d(n_out_channels)
         self.conv1 = nn.Conv2d(n_channels, n_out_channels, kernel_size=1, bias=False)
         # CBAM
-        self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
+        # self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
@@ -137,7 +141,7 @@ class _Transition(nn.Module):
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
         # CBAM
-        out = self.cbam(out)
+        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
@@ -254,3 +258,14 @@ class Encoder(pl.LightningModule):
 
         # flat to 1-D
         return feature, mask
+
+if __name__ == "__main__":
+    # test
+    encoder = Encoder(d_model=512, growth_rate=24, num_layers=16)
+    img = torch.randn(2, 1, 256, 256)
+    img_mask = torch.randint(0, 2, (2, 256, 256))
+    feature, mask = encoder(img, img_mask)
+    print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
+
+    print(encoder(img, img_mask)[0].shape)
+    print(encoder(img, img_mask)[1].shape)
