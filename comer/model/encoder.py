@@ -18,13 +18,16 @@ class ChannelAttention(nn.Module):
             nn.AdaptiveMaxPool2d(1)
         ])
         self.excitation = nn.Sequential(
+            nn.BatchNorm2d(channels),
             nn.Conv2d(in_channels=channels,
                       out_channels=channels // reduction_rate,
                       kernel_size=1),
+            nn.BatchNorm2d(channels // reduction_rate),
             nn.ReLU(),
             nn.Conv2d(in_channels=channels // reduction_rate,
                       out_channels=channels,
-                      kernel_size=1)
+                      kernel_size=1),
+            nn.BatchNorm2d(channels),
         )
         self.sigmoid = nn.Sigmoid()
 
@@ -42,12 +45,14 @@ class ChannelAttention(nn.Module):
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super(SpatialAttention, self).__init__()
+
         self.conv = nn.Conv2d(
             in_channels=2,
             out_channels=1,
             kernel_size=kernel_size,
             padding=kernel_size // 2
         )
+        self.bn = nn.BatchNorm2d(1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -57,8 +62,8 @@ class SpatialAttention(nn.Module):
 
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
+        feat = self.bn(feat)
         attention = self.sigmoid(feat)
-
         return attention * x
 
 class CBAM(nn.Module):
@@ -263,8 +268,18 @@ if __name__ == "__main__":
     img = torch.randn(2, 1, 256, 256)
     img_mask = torch.randint(0, 2, (2, 256, 256))
     feature, mask = encoder(img, img_mask)
+
+
+    def print_grad(module, grad_input, grad_output):
+        print(f"Layer {module}: Gradients = {grad_output}")
+
+
+    # Đăng ký hook cho từng layer trong mô hình
+    for layer in encoder.children():
+        layer.register_backward_hook(print_grad)
+
     print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
     print(encoder)
 
-    # print(encoder(img, img_mask)[0].shape)
+    print(encoder(img, img_mask)[0].shape)
     # print(encoder(img, img_mask)[1].shape)
