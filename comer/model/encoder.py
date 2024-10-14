@@ -13,23 +13,13 @@ from .pos_enc import ImgPosEnc
 class ChannelAttention(nn.Module):
     def __init__(self, channels, reduction_rate=16):
         super(ChannelAttention, self).__init__()
+
         self.squeeze = nn.ModuleList([
-            nn.AdaptiveAvgPool2d(1),
-            nn.AdaptiveMaxPool2d(1)
+            nn.AvgPool2d(1),
+            nn.MaxPool2d(1)
         ])
-        self.excitation1 = nn.Sequential(
-            nn.BatchNorm2d(channels),
-            nn.Conv2d(in_channels=channels,
-                      out_channels=channels // reduction_rate,
-                      kernel_size=1),
-            nn.BatchNorm2d(channels // reduction_rate),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=channels // reduction_rate,
-                      out_channels=channels,
-                      kernel_size=1),
-            nn.BatchNorm2d(channels),
-        )
-        self.excitation2 = nn.Sequential(
+
+        self.excitation = nn.Sequential(
             nn.BatchNorm2d(channels),
             nn.Conv2d(in_channels=channels,
                       out_channels=channels // reduction_rate,
@@ -48,8 +38,8 @@ class ChannelAttention(nn.Module):
         avg_feat = self.squeeze[0](x)
         max_feat = self.squeeze[1](x)
         # perform excitation with the same excitation sub-net
-        avg_out = self.excitation1(avg_feat)
-        max_out = self.excitation2(max_feat)
+        avg_out = self.excitation(avg_feat)
+        max_out = self.excitation(max_feat)
         # attention
         attention = self.sigmoid(avg_out + max_out)
         return attention * x
@@ -277,8 +267,8 @@ class Encoder(pl.LightningModule):
 if __name__ == "__main__":
     # test
     encoder = Encoder(d_model=512, growth_rate=24, num_layers=16)
-    img = torch.randn(2, 1, 256, 256)
-    img_mask = torch.randint(0, 2, (2, 256, 256))
+    img = torch.randn(1, 1, 512, 512)
+    img_mask = torch.randint(1, 2, (2, 512, 512))
     feature, mask = encoder(img, img_mask)
 
 
