@@ -89,10 +89,10 @@ class _Bottleneck(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        out = F.relu(self.bn1(self.conv1(x)), inplace=False)
         if self.use_dropout:
             out = self.dropout(out)
-        out = F.relu(self.bn2(self.conv2(out)), inplace=True)
+        out = F.relu(self.bn2(self.conv2(out)), inplace=False)
         out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
@@ -265,5 +265,5 @@ if __name__ == "__main__":
     feature, mask = encoder(img, img_mask)
     print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
 
-    print(encoder(img, img_mask)[0].shape)
-    print(encoder(img, img_mask)[1].shape)
+    # print(encoder(img, img_mask)[0].shape)
+    # print(encoder(img, img_mask)[1].shape)
