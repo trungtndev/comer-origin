@@ -93,7 +93,7 @@ class _Bottleneck(nn.Module):
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
         # CBAM
-        # self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
+        # self.cbam = CBAM(channels=growth_rate + interChannels, reduction_rate=16, kernel_size=7)
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
@@ -119,16 +119,11 @@ class _SingleLayer(nn.Module):
         self.conv1 = nn.Conv2d(
             n_channels, growth_rate, kernel_size=3, padding=1, bias=False
         )
-        # CBAM
-        # self.cbam = CBAM(growth_rate, reduction_rate=16, kernel_size=7)
-
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         out = self.conv1(F.relu(x, inplace=True))
-        # CBAM
-        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
