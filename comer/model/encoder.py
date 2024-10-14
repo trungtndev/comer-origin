@@ -52,7 +52,7 @@ class SpatialAttention(nn.Module):
             out_channels=1,
             kernel_size=kernel_size,
             padding=kernel_size // 2,
-            bias=True
+            bias=False
         )
         self.bn = nn.BatchNorm2d(1)
         self.sigmoid = nn.Sigmoid()
@@ -86,7 +86,8 @@ class _Bottleneck(nn.Module):
         super(_Bottleneck, self).__init__()
         interChannels = 4 * growth_rate
         self.bn1 = nn.BatchNorm2d(interChannels)
-        self.conv1 = nn.Conv2d(n_channels, interChannels, kernel_size=1, bias=False)
+        self.conv1 = nn.Conv2d(
+            n_channels, interChannels, kernel_size=1, bias=False)
 
         self.bn2 = nn.BatchNorm2d(growth_rate)
         self.conv2 = nn.Conv2d(
@@ -96,7 +97,7 @@ class _Bottleneck(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
         # CBAM
-        self.cbam = CBAM(channels=growth_rate, reduction_rate=2, kernel_size=7)
+        self.cbam = CBAM(channels=growth_rate, reduction_rate=2, kernel_size=13)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
@@ -293,4 +294,4 @@ if __name__ == "__main__":
     # print(encoder)
 
     # print(encoder(img, img_mask)[0])
-    # print(encoder(img, img_mask)[1].shape)
+    print(encoder(img, img_mask)[1].shape)
