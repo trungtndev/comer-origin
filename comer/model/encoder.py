@@ -145,12 +145,13 @@ class _Transition(nn.Module):
 
     def forward(self, x):
         out = self.bn1(self.conv1(x))
+        out = self.cbam(out)
         out = F.relu(out, inplace=True)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
         # CBAM
-        out = self.cbam(out)
+
         return out
 
 
