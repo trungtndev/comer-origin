@@ -240,6 +240,7 @@ class Encoder(pl.LightningModule):
         self.model = DenseNet(growth_rate=growth_rate, num_layers=num_layers)
 
         self.feature_proj = nn.Conv2d(self.model.out_channels, d_model, kernel_size=1)
+        self.cbam = CBAM(d_model, reduction_rate=2, kernel_size=13)
 
         self.pos_enc_2d = ImgPosEnc(d_model, normalize=True)
 
@@ -265,6 +266,7 @@ class Encoder(pl.LightningModule):
         # extract feature
         feature, mask = self.model(img, img_mask)
         feature = self.feature_proj(feature)
+        feature = self.cbam(feature)
 
         # proj
         feature = rearrange(feature, "b d h w -> b h w d")
