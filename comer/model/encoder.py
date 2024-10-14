@@ -87,30 +87,27 @@ class _Bottleneck(nn.Module):
         interChannels = 4 * growth_rate
         self.bn1 = nn.BatchNorm2d(interChannels)
         self.conv1 = nn.Conv2d(n_channels, interChannels, kernel_size=1, bias=False)
-        # CBAM
-        # self.cbam1 = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
 
         self.bn2 = nn.BatchNorm2d(growth_rate)
         self.conv2 = nn.Conv2d(
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
         # CBAM
-        # self.cbam2 = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
+        # self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        # CBAM
-        # out = self.cbam1(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
-        # CBAM
-        # out = self.cbam2(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
+
+
+
         return out
 
 
