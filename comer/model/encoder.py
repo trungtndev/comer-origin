@@ -54,6 +54,7 @@ class SpatialAttention(nn.Module):
             padding=kernel_size // 2,
             bias=True
         )
+        self.bn = nn.BatchNorm2d(1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -63,6 +64,7 @@ class SpatialAttention(nn.Module):
 
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
+        feat = self.bn(feat)
         attention = self.sigmoid(feat)
         return attention * x
 
