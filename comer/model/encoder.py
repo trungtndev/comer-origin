@@ -24,7 +24,7 @@ class ChannelAttention(nn.Module):
                       out_channels=channels // reduction_rate,
                       kernel_size=1,
                       bias=True),
-            nn.SiLU(),
+            nn.GELU(),
             nn.Conv2d(in_channels=channels // reduction_rate,
                       out_channels=channels,
                       kernel_size=1,
@@ -41,7 +41,7 @@ class ChannelAttention(nn.Module):
         max_out = self.excitation(max_feat)
         # attention
         attention = self.sigmoid(avg_out + max_out)
-        return attention * x
+        return attention + x
 
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
@@ -66,7 +66,7 @@ class SpatialAttention(nn.Module):
         feat = self.conv(feat)
         feat = self.bn(feat)
         attention = self.sigmoid(feat)
-        return attention * x
+        return attention + x
 
 class CBAM(nn.Module):
     def __init__(self, channels, reduction_rate=16, kernel_size=7):
@@ -92,10 +92,11 @@ class _Bottleneck(nn.Module):
         self.conv2 = nn.Conv2d(
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
-        # CBAM
-        # self.cbam = CBAM(channels=growth_rate + interChannels, reduction_rate=16, kernel_size=7)
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
+
+        # CBAM
+        # self.cbam = CBAM(channels=growth_rate + interChannels, reduction_rate=16, kernel_size=7)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
@@ -106,8 +107,8 @@ class _Bottleneck(nn.Module):
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
 
-
-
+        # CBAM
+        # out = self.cbam(out)
         return out
 
 
