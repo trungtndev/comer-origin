@@ -84,16 +84,16 @@ class _Bottleneck(nn.Module):
         self.conv2 = nn.Conv2d(
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
-        self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
+        # self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)), inplace=False)
+        out = F.relu(self.bn1(self.conv1(x)), inplace=True)
         if self.use_dropout:
             out = self.dropout(out)
-        out = F.relu(self.bn2(self.conv2(out)), inplace=False)
-        out = self.cbam(out)
+        out = F.relu(self.bn2(self.conv2(out)), inplace=True)
+        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
@@ -109,7 +109,7 @@ class _SingleLayer(nn.Module):
             n_channels, growth_rate, kernel_size=3, padding=1, bias=False
         )
         # CBAM
-        self.cbam = CBAM(growth_rate, reduction_rate=16, kernel_size=7)
+        # self.cbam = CBAM(growth_rate, reduction_rate=16, kernel_size=7)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
@@ -117,7 +117,7 @@ class _SingleLayer(nn.Module):
     def forward(self, x):
         out = self.conv1(F.relu(x, inplace=True))
         # CBAM
-        out = self.cbam(out)
+        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
@@ -131,7 +131,7 @@ class _Transition(nn.Module):
         self.bn1 = nn.BatchNorm2d(n_out_channels)
         self.conv1 = nn.Conv2d(n_channels, n_out_channels, kernel_size=1, bias=False)
         # CBAM
-        # self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
+        self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
@@ -139,7 +139,7 @@ class _Transition(nn.Module):
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
         # CBAM
-        # out = self.cbam(out)
+        out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
@@ -264,6 +264,7 @@ if __name__ == "__main__":
     img_mask = torch.randint(0, 2, (2, 256, 256))
     feature, mask = encoder(img, img_mask)
     print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
+    print(encoder)
 
     # print(encoder(img, img_mask)[0].shape)
     # print(encoder(img, img_mask)[1].shape)
