@@ -51,7 +51,8 @@ class SpatialAttention(nn.Module):
             in_channels=2,
             out_channels=1,
             kernel_size=kernel_size,
-            padding=kernel_size // 2
+            padding=kernel_size // 2,
+            bias=False
         )
         self.bn = nn.BatchNorm2d(1)
         self.sigmoid = nn.Sigmoid()
