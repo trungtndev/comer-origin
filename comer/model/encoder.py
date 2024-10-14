@@ -41,7 +41,7 @@ class ChannelAttention(nn.Module):
         max_out = self.excitation(max_feat)
         # attention
         attention = self.sigmoid(avg_out + max_out)
-        return x + attention * x
+        return attention * x
 
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
@@ -64,7 +64,7 @@ class SpatialAttention(nn.Module):
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
         attention = self.sigmoid(feat)
-        return x + attention * x
+        return attention * x
 
 class CBAM(nn.Module):
     def __init__(self, channels, reduction_rate=16, kernel_size=7):
@@ -94,7 +94,7 @@ class _Bottleneck(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
         # CBAM
-        self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
+        self.cbam = CBAM(channels=growth_rate, reduction_rate=1, kernel_size=7)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
@@ -149,7 +149,6 @@ class _Transition(nn.Module):
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
-        # CBAM
 
         return out
 
