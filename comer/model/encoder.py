@@ -280,7 +280,7 @@ class Encoder(pl.LightningModule):
 
 if __name__ == "__main__":
     # test
-    encoder = Encoder(d_model=512, growth_rate=24, num_layers=16)
+    encoder = Encoder(d_model=256, growth_rate=24, num_layers=16)
     img = torch.randn(1, 1, 512, 512)
     img_mask = torch.randint(1, 2, (2, 512, 512))
     feature, mask = encoder(img, img_mask)
