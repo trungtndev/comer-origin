@@ -97,15 +97,17 @@ class _Bottleneck(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
         # CBAM
-        self.cbam = CBAM(channels=growth_rate, reduction_rate=2, kernel_size=13)
+        self.cbam1 = CBAM(channels=interChannels, reduction_rate=2, kernel_size=13)
+        self.cbam2 = CBAM(channels=growth_rate, reduction_rate=2, kernel_size=13)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        out = self.cbam1(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
         # CBAM
-        out = self.cbam(out)
+        out = self.cbam2(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
@@ -139,14 +141,14 @@ class _Transition(nn.Module):
         self.bn1 = nn.BatchNorm2d(n_out_channels)
         self.conv1 = nn.Conv2d(n_channels, n_out_channels, kernel_size=1, bias=False)
         # CBAM
-        # self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
+        self.cbam = CBAM(n_out_channels, reduction_rate=2, kernel_size=13)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        # out = self.cbam(out)
+        out = self.cbam(out)
 
         if self.use_dropout:
             out = self.dropout(out)
@@ -172,7 +174,7 @@ class DenseNet(nn.Module):
         )
         self.norm1 = nn.BatchNorm2d(n_channels)
 
-        # self.cbam = CBAM(n_channels, reduction_rate=16, kernel_size=7)
+        self.cbam = CBAM(n_channels, reduction_rate=2, kernel_size=13)
 
 
 
@@ -218,7 +220,7 @@ class DenseNet(nn.Module):
         out = F.max_pool2d(out, 2, ceil_mode=True)
         out_mask = out_mask[:, 0::2, 0::2]
 
-        # out = self.cbam(out)
+        out = self.cbam(out)
 
         out = self.dense1(out)
         out = self.trans1(out)
