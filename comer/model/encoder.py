@@ -15,21 +15,20 @@ class ChannelAttention(nn.Module):
         super(ChannelAttention, self).__init__()
 
         self.squeeze = nn.ModuleList([
-            nn.AvgPool2d(1),
-            nn.MaxPool2d(1)
+            nn.AdaptiveAvgPool2d(1),
+            nn.AdaptiveMaxPool2d(1)
         ])
 
         self.excitation = nn.Sequential(
-            # nn.BatchNorm2d(channels),
             nn.Conv2d(in_channels=channels,
                       out_channels=channels // reduction_rate,
-                      kernel_size=1),
-            # nn.BatchNorm2d(channels // reduction_rate),
-            nn.ReLU(),
+                      kernel_size=1,
+                      bias=False),
+            nn.SiLU(),
             nn.Conv2d(in_channels=channels // reduction_rate,
                       out_channels=channels,
-                      kernel_size=1),
-            # nn.BatchNorm2d(channels),
+                      kernel_size=1,
+                      bias=False),
         )
         self.sigmoid = nn.Sigmoid()
 
@@ -54,7 +53,7 @@ class SpatialAttention(nn.Module):
             kernel_size=kernel_size,
             padding=kernel_size // 2
         )
-        # self.bn = nn.BatchNorm2d(1)
+        self.bn = nn.BatchNorm2d(1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -64,7 +63,7 @@ class SpatialAttention(nn.Module):
 
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
-        # feat = self.bn(feat)
+        feat = self.bn(feat)
         attention = self.sigmoid(feat)
         return attention * x
 
@@ -91,7 +90,7 @@ class _Bottleneck(nn.Module):
         self.conv2 = nn.Conv2d(
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
-        # self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
+        self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
@@ -100,7 +99,7 @@ class _Bottleneck(nn.Module):
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
-        # out = self.cbam(out)
+        out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
@@ -138,7 +137,7 @@ class _Transition(nn.Module):
         self.bn1 = nn.BatchNorm2d(n_out_channels)
         self.conv1 = nn.Conv2d(n_channels, n_out_channels, kernel_size=1, bias=False)
         # CBAM
-        self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
+        # self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
@@ -146,7 +145,7 @@ class _Transition(nn.Module):
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
         # CBAM
-        out = self.cbam(out)
+        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
