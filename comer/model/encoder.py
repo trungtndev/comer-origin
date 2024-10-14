@@ -23,12 +23,12 @@ class ChannelAttention(nn.Module):
             nn.Conv2d(in_channels=channels,
                       out_channels=channels // reduction_rate,
                       kernel_size=1,
-                      bias=False),
+                      bias=True),
             nn.SiLU(),
             nn.Conv2d(in_channels=channels // reduction_rate,
                       out_channels=channels,
                       kernel_size=1,
-                      bias=False),
+                      bias=True),
         )
         self.sigmoid = nn.Sigmoid()
 
@@ -87,20 +87,27 @@ class _Bottleneck(nn.Module):
         interChannels = 4 * growth_rate
         self.bn1 = nn.BatchNorm2d(interChannels)
         self.conv1 = nn.Conv2d(n_channels, interChannels, kernel_size=1, bias=False)
+        # CBAM
+        # self.cbam1 = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
+
         self.bn2 = nn.BatchNorm2d(growth_rate)
         self.conv2 = nn.Conv2d(
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
-        self.cbam = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
+        # CBAM
+        # self.cbam2 = CBAM(channels=growth_rate, reduction_rate=16, kernel_size=7)
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        # CBAM
+        # out = self.cbam1(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
-        out = self.cbam(out)
+        # CBAM
+        # out = self.cbam2(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
@@ -138,18 +145,18 @@ class _Transition(nn.Module):
         self.bn1 = nn.BatchNorm2d(n_out_channels)
         self.conv1 = nn.Conv2d(n_channels, n_out_channels, kernel_size=1, bias=False)
         # CBAM
-        # self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
+        self.cbam = CBAM(n_out_channels, reduction_rate=16, kernel_size=7)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        # CBAM
-        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
+        # CBAM
+        out = self.cbam(out)
         return out
 
 
@@ -169,6 +176,11 @@ class DenseNet(nn.Module):
             1, n_channels, kernel_size=7, padding=3, stride=2, bias=False
         )
         self.norm1 = nn.BatchNorm2d(n_channels)
+
+        self.cbam = CBAM(n_channels, reduction_rate=16, kernel_size=7)
+
+
+
         self.dense1 = self._make_dense(
             n_channels, growth_rate, n_dense_blocks, bottleneck, use_dropout
         )
@@ -210,6 +222,9 @@ class DenseNet(nn.Module):
         out = F.relu(out, inplace=True)
         out = F.max_pool2d(out, 2, ceil_mode=True)
         out_mask = out_mask[:, 0::2, 0::2]
+
+        out = self.cbam(out)
+
         out = self.dense1(out)
         out = self.trans1(out)
         out_mask = out_mask[:, 0::2, 0::2]
