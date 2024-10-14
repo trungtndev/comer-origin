@@ -69,8 +69,9 @@ class CBAM(nn.Module):
         self.spatial_attention = SpatialAttention(kernel_size)
 
     def forward(self, x):
-        out = self.channel_attention(x)
-        return self.spatial_attention(out)
+        x = self.channel_attention(x)
+        x = self.spatial_attention(x)
+        return x
 
 # DenseNet-B
 class _Bottleneck(nn.Module):
