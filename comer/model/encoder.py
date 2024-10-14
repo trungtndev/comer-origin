@@ -94,7 +94,7 @@ class _Bottleneck(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
         # CBAM
-        self.cbam = CBAM(channels=growth_rate, reduction_rate=1, kernel_size=7)
+        self.cbam = CBAM(channels=growth_rate, reduction_rate=2, kernel_size=7)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
@@ -143,9 +143,9 @@ class _Transition(nn.Module):
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
-        out = self.bn1(self.conv1(x))
+        out = F.relu(self.bn1(self.conv1(x)), inplace=True)
         # out = self.cbam(out)
-        out = F.relu(out, inplace=True)
+
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
@@ -274,7 +274,7 @@ class Encoder(pl.LightningModule):
 
 if __name__ == "__main__":
     # test
-    encoder = Encoder(d_model=512, growth_rate=24, num_layers=2)
+    encoder = Encoder(d_model=512, growth_rate=24, num_layers=16)
     img = torch.randn(1, 1, 512, 512)
     img_mask = torch.randint(1, 2, (2, 512, 512))
     feature, mask = encoder(img, img_mask)
@@ -288,8 +288,8 @@ if __name__ == "__main__":
     # for layer in encoder.children():
     #     layer.register_backward_hook(print_grad)
 
-    # print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
+    print("param:",sum(p.numel() for p in encoder.parameters() if p.requires_grad))
     # print(encoder)
 
-    print(encoder(img, img_mask)[0])
-    print(encoder(img, img_mask)[1].shape)
+    # print(encoder(img, img_mask)[0])
+    # print(encoder(img, img_mask)[1].shape)
