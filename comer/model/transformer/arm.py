@@ -90,11 +90,14 @@ class AttentionRefinementModule(nn.Module):
         attns = attns.cumsum(dim=2) - attns
         attns = rearrange(attns, "b n t (h w) -> (b t) n h w", h=h)
 
+        #======================
         cov = self.conv(attns)
         cov = self.act(cov)
 
         cov = cov.masked_fill(mask, 0.0)
         cov = self.proj(cov)
+
+        #======================
 
         cov = self.post_norm(cov, mask)
 
