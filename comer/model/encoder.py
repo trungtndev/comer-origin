@@ -33,10 +33,8 @@ class ChannelAttention(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        # perform squeeze with independent Pooling
         avg_feat = self.squeeze[0](x)
         max_feat = self.squeeze[1](x)
-        # perform excitation with the same excitation sub-net
         avg_out = self.excitation(avg_feat)
         max_out = self.excitation(max_feat)
         # attention
