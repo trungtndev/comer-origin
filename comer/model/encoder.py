@@ -34,7 +34,6 @@ class _Bottleneck(nn.Module):
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
-        # CBAM
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
