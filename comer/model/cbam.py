@@ -28,7 +28,6 @@ class ChannelAttention(nn.Module):
         max_feat = self.squeeze[1](x)
         avg_out = self.excitation(avg_feat)
         max_out = self.excitation(max_feat)
-        # attention
         attention = self.sigmoid(avg_out + max_out)
         return attention * x
 
@@ -41,9 +40,8 @@ class SpatialAttention(nn.Module):
             out_channels=1,
             kernel_size=kernel_size,
             padding=kernel_size // 2,
-            bias=False
+            bias=True
         )
-        self.bn2 = nn.BatchNorm2d(1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -53,7 +51,6 @@ class SpatialAttention(nn.Module):
 
         feat = torch.cat([avg_feat, max_feat], dim=1)
         feat = self.conv(feat)
-        feat = self.bn2(feat)
         attention = self.sigmoid(feat)
         return attention * x
 
