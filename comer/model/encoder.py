@@ -20,20 +20,24 @@ class _Bottleneck(nn.Module):
         self.bn1 = nn.BatchNorm2d(interChannels)
         self.conv1 = nn.Conv2d(
             n_channels, interChannels, kernel_size=1, bias=False)
-
         self.bn2 = nn.BatchNorm2d(growth_rate)
         self.conv2 = nn.Conv2d(
             interChannels, growth_rate, kernel_size=3, padding=1, bias=False
         )
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
+        # ==================CBAM==================
+        self.cbam1 = CBAM(interChannels, reduction_rate=2, kernel_size=7)
+        self.cbam2 = CBAM(growth_rate, reduction_rate=2, kernel_size=7)
 
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        out = self.cbam1(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
+        out = self.cbam2(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
@@ -70,12 +74,15 @@ class _Transition(nn.Module):
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
+        # ==================CBAM==================
+        self.cbam = CBAM(n_out_channels, reduction_rate=2, kernel_size=7)
+
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
-
 
         return out
 
@@ -182,8 +189,9 @@ class Encoder(pl.LightningModule):
         """
         # extract feature
         feature, mask = self.model(img, img_mask)
-        feature = self.cbam(feature)
         feature = self.feature_proj(feature)
+        feature = self.cbam(feature)
+
 
 
         # proj
