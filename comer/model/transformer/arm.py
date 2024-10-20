@@ -58,7 +58,7 @@ class AttentionRefinementModule(nn.Module):
         self.proj = nn.Conv2d(dc, nhead, kernel_size=1, bias=False)
         self.post_norm = MaskBatchNorm2d(nhead)
 
-        self.cbam1 = CBAM(nhead, reduction_rate=2, kernel_size=7)
+        self.cbam1 = CBAM(dc, reduction_rate=2, kernel_size=7)
 
     def forward(
         self, prev_attn: Tensor, key_padding_mask: Tensor, h: int, curr_attn: Tensor
