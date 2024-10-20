@@ -182,8 +182,9 @@ class Encoder(pl.LightningModule):
         """
         # extract feature
         feature, mask = self.model(img, img_mask)
-        feature = self.feature_proj(feature)
         feature = self.cbam(feature)
+        feature = self.feature_proj(feature)
+
 
         # proj
         feature = rearrange(feature, "b d h w -> b h w d")
