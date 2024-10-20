@@ -68,18 +68,18 @@ class _Transition(nn.Module):
         self.bn1 = nn.BatchNorm2d(n_out_channels)
         self.conv1 = nn.Conv2d(n_channels, n_out_channels, kernel_size=1, bias=False)
         # CBAM
-        self.cbam = CBAM(n_out_channels, reduction_rate=2, kernel_size=7)
+        # self.cbam = CBAM(n_out_channels, reduction_rate=2, kernel_size=7)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
+        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
 
-        out = self.cbam(out)
 
         return out
 
