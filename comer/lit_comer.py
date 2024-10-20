@@ -138,17 +138,30 @@ class LitCoMER(pl.LightningModule):
             weight_decay=1e-4,
         )
 
-        reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        # reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        #     optimizer,
+        #     mode="max",
+        #     factor=0.25,
+        #     patience=self.hparams.patience // self.trainer.check_val_every_n_epoch,
+        # )
+        # scheduler = {
+        #     "scheduler": reduce_scheduler,
+        #     "monitor": "val_ExpRate",
+        #     "interval": "epoch",
+        #     "frequency": self.trainer.check_val_every_n_epoch,
+        #     "strict": True,
+        # }
+
+        step_scheduler = optim.lr_scheduler.StepLR(
             optimizer,
-            mode="max",
-            factor=0.25,
-            patience=self.hparams.patience // self.trainer.check_val_every_n_epoch,
-        )
+            verbose=True,
+            step_size=self.hparams.patience,
+            gamma=0.25)
+
         scheduler = {
-            "scheduler": reduce_scheduler,
-            "monitor": "val_ExpRate",
+            "scheduler": step_scheduler,
             "interval": "epoch",
-            "frequency": self.trainer.check_val_every_n_epoch,
+            "frequency": 1,
             "strict": True,
         }
 
