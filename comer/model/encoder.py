@@ -192,8 +192,6 @@ class Encoder(pl.LightningModule):
         feature = self.feature_proj(feature)
         feature = self.cbam(feature)
 
-
-
         # proj
         feature = rearrange(feature, "b d h w -> b h w d")
 
