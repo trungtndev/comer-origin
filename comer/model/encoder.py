@@ -66,15 +66,12 @@ class _Transition(nn.Module):
         super(_Transition, self).__init__()
         self.bn1 = nn.BatchNorm2d(n_out_channels)
         self.conv1 = nn.Conv2d(n_channels, n_out_channels, kernel_size=1, bias=False)
-        # CBAM
-        # self.cbam = CBAM(n_out_channels, reduction_rate=2, kernel_size=7)
 
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        # out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.avg_pool2d(out, 2, ceil_mode=True)
@@ -160,7 +157,7 @@ class Encoder(pl.LightningModule):
         self.model = DenseNet(growth_rate=growth_rate, num_layers=num_layers)
 
         self.feature_proj = nn.Conv2d(self.model.out_channels, d_model, kernel_size=1)
-        # self.cbam = CBAM(d_model, reduction_rate=2, kernel_size=13)
+        self.cbam = CBAM(d_model, reduction_rate=2, kernel_size=3)
 
         self.pos_enc_2d = ImgPosEnc(d_model, normalize=True)
 
@@ -186,7 +183,7 @@ class Encoder(pl.LightningModule):
         # extract feature
         feature, mask = self.model(img, img_mask)
         feature = self.feature_proj(feature)
-        # feature = self.cbam(feature)
+        feature = self.cbam(feature)
 
         # proj
         feature = rearrange(feature, "b d h w -> b h w d")
