@@ -157,7 +157,7 @@ class Encoder(pl.LightningModule):
         self.model = DenseNet(growth_rate=growth_rate, num_layers=num_layers)
 
         self.feature_proj = nn.Conv2d(self.model.out_channels, d_model, kernel_size=1)
-        self.cbam = CBAM(d_model, reduction_rate=2, kernel_size=3)
+        self.cbam = CBAM(d_model, reduction_rate=2, kernel_size=7)
 
         self.pos_enc_2d = ImgPosEnc(d_model, normalize=True)
 
