@@ -4,6 +4,7 @@ from einops import rearrange, repeat
 from torch import Tensor
 from torch.nn.modules.batchnorm import BatchNorm1d
 
+from ..cbam import CBAM
 
 class MaskBatchNorm2d(nn.Module):
     def __init__(self, num_features: int):
@@ -57,6 +58,8 @@ class AttentionRefinementModule(nn.Module):
         self.proj = nn.Conv2d(dc, nhead, kernel_size=1, bias=False)
         self.post_norm = MaskBatchNorm2d(nhead)
 
+        self.cbam = CBAM(nhead, reduction_rate=2, kernel_size=7)
+
     def forward(
         self, prev_attn: Tensor, key_padding_mask: Tensor, h: int, curr_attn: Tensor
     ) -> Tensor:
@@ -95,6 +98,8 @@ class AttentionRefinementModule(nn.Module):
 
         cov = cov.masked_fill(mask, 0.0)
         cov = self.proj(cov)
+        # === CBAM ===
+        cov = self.cbam(cov)
 
         cov = self.post_norm(cov, mask)
 
