@@ -27,17 +27,15 @@ class _Bottleneck(nn.Module):
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
         # ==================CBAM==================
-        self.cbam1 = CBAM(interChannels, reduction_rate=2, kernel_size=7)
-        self.cbam2 = CBAM(growth_rate, reduction_rate=2, kernel_size=7)
+        self.cbam = CBAM(growth_rate, reduction_rate=2, kernel_size=7)
 
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        out = self.cbam1(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = F.relu(self.bn2(self.conv2(out)), inplace=True)
-        out = self.cbam2(out)
+        out = self.cbam(out)
         if self.use_dropout:
             out = self.dropout(out)
         out = torch.cat((x, out), 1)
