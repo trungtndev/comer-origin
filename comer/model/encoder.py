@@ -101,9 +101,6 @@ class DenseNet(nn.Module):
         )
         self.norm1 = nn.BatchNorm2d(n_channels)
 
-        # self.cbam = CBAM(n_channels, reduction_rate=2, kernel_size=13)
-
-
 
         self.dense1 = self._make_dense(
             n_channels, growth_rate, n_dense_blocks, bottleneck, use_dropout
@@ -146,9 +143,6 @@ class DenseNet(nn.Module):
         out = F.relu(out, inplace=True)
         out = F.max_pool2d(out, 2, ceil_mode=True)
         out_mask = out_mask[:, 0::2, 0::2]
-
-        # out = self.cbam(out)
-
         out = self.dense1(out)
         out = self.trans1(out)
         out_mask = out_mask[:, 0::2, 0::2]
